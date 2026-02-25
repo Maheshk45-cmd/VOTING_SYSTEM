@@ -1,67 +1,101 @@
--- =============================================
--- Online Voting System - Database Schema
--- =============================================
--- Run this script to create all tables with constraints.
-
+-- DROP & CREATE DATABASE
 DROP DATABASE IF EXISTS VOTING_SYSTEM;
 CREATE DATABASE VOTING_SYSTEM;
 USE VOTING_SYSTEM;
 
--- ---------------------------------------------
--- 1. STUDENT
--- ---------------------------------------------
+-- STUDENT TABLE
 CREATE TABLE STUDENT (
-    user_id     INT PRIMARY KEY AUTO_INCREMENT,
-    username    VARCHAR(100) NOT NULL,
-    roll_no     VARCHAR(50)  UNIQUE NOT NULL,
-    branch      VARCHAR(100) NOT NULL,
-    dob         DATE         NOT NULL,
-    mobile_no   VARCHAR(15),
-    email       VARCHAR(255) UNIQUE NOT NULL,
-    password    VARCHAR(255) NOT NULL,
-    is_eligible BOOLEAN      DEFAULT TRUE
+  student_id INT PRIMARY KEY AUTO_INCREMENT,
+  student_name VARCHAR(255) NOT NULL,
+  roll_no INT UNIQUE NOT NULL,
+  branch VARCHAR(50) NOT NULL,
+  dob DATE DEFAULT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  Pass VARCHAR(255) NOT NULL,
+  is_eligible BOOLEAN DEFAULT FALSE,
+  prn_id VARCHAR(50) UNIQUE,
+  role ENUM('student','party_head','admin') DEFAULT 'student',
+  CONSTRAINT fk_student_prn FOREIGN KEY (prn_id)
+      REFERENCES ELIGIBLE_STUDENT(prn_id) ON DELETE RESTRICT
 );
 
--- ---------------------------------------------
--- 2. ADDRESS (One Student → Many Addresses)
--- ---------------------------------------------
-CREATE TABLE ADDRESS (
-    address_id  INT PRIMARY KEY AUTO_INCREMENT,
-    user_id     INT NOT NULL,
-        street      VARCHAR(255),
-        city        VARCHAR(100),
-        state       VARCHAR(100),
-        pincode     VARCHAR(10),
-    FOREIGN KEY (user_id) REFERENCES STUDENT(user_id) ON DELETE CASCADE
+-- ELIGIBLE STUDENT TABLE
+CREATE TABLE ELIGIBLE_STUDENT (
+  prn_id VARCHAR(50) PRIMARY KEY,
+  email VARCHAR(50) UNIQUE,
+  student_name VARCHAR(200)
 );
 
--- ---------------------------------------------
--- 3. CANDIDATE
--- ---------------------------------------------
-CREATE TABLE CANDIDATE (
-    candidate_id INT PRIMARY KEY AUTO_INCREMENT,
-    name         VARCHAR(100) NOT NULL,
-    branch       VARCHAR(100),
-    party_name   VARCHAR(100)
+-- ELECTION TABLE
+CREATE TABLE ELECTION (
+  e_id INT PRIMARY KEY AUTO_INCREMENT,
+  e_name VARCHAR(255),
+  e_year VARCHAR(20),
+  phase ENUM('NOMINATION','WITHDRAWAL','VOTING','RESULT','CLOSED') DEFAULT 'NOMINATION'
 );
 
--- ---------------------------------------------
--- 4. VOTE
--- One student can vote only once (user_id UNIQUE)
--- ---------------------------------------------
+-- ELECTION POSITION TABLE
+CREATE TABLE ELECTION_POSITION (
+  ep_id INT PRIMARY KEY AUTO_INCREMENT,
+  e_id INT NOT NULL,
+  p_name VARCHAR(100),
+  status ENUM('nomination','withdrawal','voting','completed','re_election_required') DEFAULT 'nomination',
+  FOREIGN KEY (e_id) REFERENCES ELECTION(e_id) ON DELETE CASCADE
+);
+
+-- PARTY TABLE
+CREATE TABLE PARTY (
+  party_id INT PRIMARY KEY AUTO_INCREMENT,
+  party_name VARCHAR(255) NOT NULL,
+  president_id INT UNIQUE,
+  FOREIGN KEY (president_id) REFERENCES STUDENT(student_id) ON DELETE SET NULL
+);
+
+-- NOMINATION TABLE
+CREATE TABLE NOMINATION (
+  nomination_id INT PRIMARY KEY AUTO_INCREMENT,
+  election_id INT NOT NULL,
+  student_id INT NOT NULL,
+  position_id INT NOT NULL,
+  party_id INT DEFAULT NULL,
+  status ENUM('PENDING','STUDENT_ACCEPTED','STUDENT_REJECTED','ADMIN_APPROVED','ADMIN_REJECTED','WITHDRAWN') DEFAULT 'PENDING',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (election_id, student_id),            -- one position per student per election
+  UNIQUE (election_id, position_id, party_id), -- one party candidate per position
+  FOREIGN KEY (election_id) REFERENCES ELECTION(e_id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES STUDENT(student_id) ON DELETE CASCADE,
+  FOREIGN KEY (position_id) REFERENCES ELECTION_POSITION(ep_id) ON DELETE CASCADE,
+  FOREIGN KEY (party_id) REFERENCES PARTY(party_id) ON DELETE SET NULL
+);
+
+-- OTP VERIFICATION TABLE
+CREATE TABLE OTP_VERIFICATION (
+  otp_id INT PRIMARY KEY AUTO_INCREMENT,
+  prn_id VARCHAR(50) UNIQUE NOT NULL,
+  otp VARCHAR(255) NOT NULL,
+  expiresAt DATETIME DEFAULT NULL,
+  attempt INT DEFAULT 0,
+  blocked_until DATETIME DEFAULT NULL,
+  FOREIGN KEY (prn_id) REFERENCES ELIGIBLE_STUDENT(prn_id) ON DELETE CASCADE
+);
+
+-- VOTES TABLE (one vote per position per student)
 CREATE TABLE VOTE (
-    vote_id      INT PRIMARY KEY AUTO_INCREMENT,
-    user_id      INT UNIQUE NOT NULL,
-    candidate_id INT NOT NULL,
-    voted_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id)      REFERENCES STUDENT(user_id)   ON DELETE CASCADE,
-    FOREIGN KEY (candidate_id) REFERENCES CANDIDATE(candidate_id) ON DELETE CASCADE
+  vote_id INT PRIMARY KEY AUTO_INCREMENT,
+  ep_id INT NOT NULL,
+  student_id INT NOT NULL,
+  candidate_nomination_id INT NOT NULL,
+  voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (ep_id, student_id),
+  FOREIGN KEY (ep_id) REFERENCES ELECTION_POSITION(ep_id),
+  FOREIGN KEY (student_id) REFERENCES STUDENT(student_id),
+  FOREIGN KEY (candidate_nomination_id) REFERENCES NOMINATION(nomination_id)
 );
 
--- ---------------------------------------------
--- Optional: Index for faster lookups
--- ---------------------------------------------
-CREATE INDEX idx_student_roll_no ON STUDENT(roll_no);
-CREATE INDEX idx_student_email   ON STUDENT(email);
-CREATE INDEX idx_address_user    ON ADDRESS(user_id);
-CREATE INDEX idx_vote_candidate  ON VOTE(candidate_id);
+-- MOBILE NUMBERS TABLE (multiple per student allowed)
+CREATE TABLE MOBILE (
+  mobile_id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT NOT NULL,
+  mobile_num VARCHAR(15) NOT NULL,
+  FOREIGN KEY (student_id) REFERENCES STUDENT(student_id) ON DELETE CASCADE
+);
