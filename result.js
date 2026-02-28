@@ -1,3 +1,19 @@
+const express = require("express");
+const app = express();
+const db = require("./db");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
+require("dotenv").config();
+app.use(express.json());
+// app.get("/Result", (req, res) => {
+//     const { e_id, ep_id } = req.body;
+//     if (!e_id || !ep_id) {
+//         return res.status(500).json({ message: "Enter the election " });
+//     }
+//     const query=`SELECT `
+// })
 app.post("/admin/election/:e_id/declare-result", authenticateToken, (req, res) => {
 
     if (req.user.role !== "admin") {
