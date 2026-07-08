@@ -1,5 +1,5 @@
 const mysql = require("mysql2");
-
+// adding comment for betterement
 const db = mysql.createConnection({
     host: "localhost",
     user: "root",
