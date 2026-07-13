@@ -1,4 +1,4 @@
-
+// what the fuck is thus
 const express = require("express");
 const app = express();
 const db = require("./db");
