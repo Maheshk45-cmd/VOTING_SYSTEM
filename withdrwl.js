@@ -35,7 +35,7 @@ app.put("/withdrawal/:id/respond", authenticateToken, (req, res) => {
         JOIN ELECTION e ON n.election_id = e.e_id
         WHERE n.nomination_id = ?
     `;
-
+    // lets check now
     db.query(query, [nomination_id], (err, results) => {
 
         if (err)
