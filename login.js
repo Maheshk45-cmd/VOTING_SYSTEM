@@ -17,7 +17,7 @@ app.post("/login", (req, res) => {
 
     if (!prn_id || !password) {
         return res.status(400).json({
-            message: "PRN and password required"
+            message: "PRN required or something missing"
         });
     }
 
