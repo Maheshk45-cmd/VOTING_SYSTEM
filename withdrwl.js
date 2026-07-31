@@ -1,4 +1,4 @@
-// 15 july to update
+//updated
 const express = require("express");
 const app = express();
 const db = require("./db");
