@@ -102,10 +102,10 @@ app.post("/request", otpLimiter, (req, res) => {
 
                     const { expiresAt, blockedUntil } = record[0];
 
-                    // 🔴 Block check
+                    
                     if (blockedUntil && new Date(blockedUntil) > now) {
                         return res.status(403).json({
-                            message: "Account temporarily blocked"
+                            message: "Account is temporarily blocked"
                         });
                     }
 
