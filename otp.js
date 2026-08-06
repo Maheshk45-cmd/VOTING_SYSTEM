@@ -189,10 +189,9 @@ app.post("/verify", (req, res) => {
 
         const now = new Date();
 
-        // 🔴 Block check
         if (blockedUntil && new Date(blockedUntil) > now) {
             return res.status(403).json({
-                message: "Too many failed attempts. Try later."
+                message: "Too many failed attempts. Try again later please ."
             });
         }
 
